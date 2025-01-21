@@ -1,5 +1,6 @@
 #include "ukf.h"
 #include "Eigen/Dense"
+#include <iostream>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -46,23 +47,65 @@ UKF::UKF() {
   // Radar measurement noise standard deviation radius change in m/s
   std_radrd_ = 0.3;
   
-  /**
-   * End DO NOT MODIFY section for measurement noise values 
-   */
-  
-  /**
-   * TODO: Complete the initialization. See ukf.h for other member properties.
-   * Hint: one or more values initialized above might be wildly off...
-   */
+  P_ <<  0.25, 0, 0, 0, 0,
+         0, 0.25, 0, 0, 0,
+         0, 0, 0.25, 0, 0,
+         0, 0, 0, 0.32, 0,
+         0, 0, 0, 0, 0.32;
+
+  is_initialized_ = false;
+  n_x_ = 5;
+  n_aug_ = 7;
+  lambda_ = 3 - n_aug_;
+  weights_ = VectorXd(2*n_aug_ + 1);
+  double wi = 0.5/(lambda_ + n_aug_);
+  weights_(0) = lambda_/(lambda_ + n_aug_);
+  for (int i=1; i< 2 * n_aug_ + 1; i++)
+    weights_(i) =  wi;
 }
 
 UKF::~UKF() {}
 
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
-  /**
-   * TODO: Complete this function! Make sure you switch between lidar and radar
-   * measurements.
-   */
+  if (!is_initialized_) {
+    // first measurement
+    std::cout << "UKF: " << std::endl;
+    x_ = VectorXd(n_x_);
+    x_ <<  0, 0, 0.5, 0.15, 0.01;
+
+    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+      // radar  is converted from polar to cartesian coordinates 
+      //         and initialize state
+      x_(0) = meas_package.raw_measurements_(0) * cos(meas_package.raw_measurements_(1));
+      x_(1) = meas_package.raw_measurements_(0) * sin(meas_package.raw_measurements_(1));
+    }
+    else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+      
+      x_(0) = meas_package.raw_measurements_(0);
+      x_(1) = meas_package.raw_measurements_(1);
+    }
+
+    time_us_ = meas_package.timestamp_;
+    is_initialized_ = true;
+    return;
+  }
+
+  double delta_t = (meas_package.timestamp_ - time_us_) / 1000000.0;  
+  time_us_ = meas_package.timestamp_;
+
+  Prediction(delta_t);
+  if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+    UpdateRadar(meas_package);
+  } 
+  else {
+    UpdateLidar(meas_package);
+  }
+
+  // print the output
+  std::cout << "x_ = " << x_ << std::endl;
+  std::cout << "P_ = " << P_ << std::endl;
+
+
 }
 
 void UKF::Prediction(double delta_t) {
