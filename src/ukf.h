@@ -3,6 +3,7 @@
 
 #include "Eigen/Dense"
 #include "measurement_package.h"
+#include <tuple>
 
 class UKF {
  public:
@@ -41,6 +42,12 @@ class UKF {
    */
   void UpdateRadar(MeasurementPackage meas_package);
 
+
+  Eigen::MatrixXd GenerateAugSigmaPoints();
+  Eigen::MatrixXd PredictSigmaPoints(Eigen::MatrixXd Xsig_aug, double delta_t);
+  void PredictMeanAndCovariance();
+  std::tuple<Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXd> PredictRadarMeasurement();
+  void UpdateState(Eigen::VectorXd z, Eigen::VectorXd z_pred, Eigen::MatrixXd S, Eigen::MatrixXd Zsig);
 
   // initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
@@ -95,6 +102,13 @@ class UKF {
 
   // Sigma point spreading parameter
   double lambda_;
+
+  // Number of sigma points
+  int n_sig_ ;
+  // Process Noise
+  Eigen::MatrixXd Q_;
+  // Measurement Noise for Radar
+  Eigen::MatrixXd R_radar_;
 };
 
 #endif  // UKF_H
