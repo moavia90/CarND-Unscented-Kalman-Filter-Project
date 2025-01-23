@@ -47,7 +47,8 @@ class UKF {
   Eigen::MatrixXd PredictSigmaPoints(Eigen::MatrixXd Xsig_aug, double delta_t);
   void PredictMeanAndCovariance();
   std::tuple<Eigen::VectorXd, Eigen::MatrixXd, Eigen::MatrixXd> PredictRadarMeasurement();
-  void UpdateState(Eigen::VectorXd z, Eigen::VectorXd z_pred, Eigen::MatrixXd S, Eigen::MatrixXd Zsig);
+  std::tuple<Eigen::VectorXd, Eigen::MatrixXd , Eigen::MatrixXd> PredictLidarMeasurement();
+  void UpdateState(Eigen::VectorXd z, Eigen::VectorXd z_pred, Eigen::MatrixXd S, Eigen::MatrixXd Zsig, MeasurementPackage::SensorType mtype);
 
   // initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
@@ -109,6 +110,8 @@ class UKF {
   Eigen::MatrixXd Q_;
   // Measurement Noise for Radar
   Eigen::MatrixXd R_radar_;
+  // Measurement Noise for Lidar
+  Eigen::MatrixXd R_lidar_; 
 };
 
 #endif  // UKF_H
