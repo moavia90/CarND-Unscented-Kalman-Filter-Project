@@ -22,10 +22,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 0.6;
+  std_a_ = 0.25;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.6;
+  std_yawdd_ = 0.4;
   
   /**
    * DO NOT MODIFY measurement noise values below.
@@ -293,7 +293,7 @@ std::tuple<VectorXd, MatrixXd , MatrixXd> UKF::PredictRadarMeasurement()
 
     double rho = sqrt(px * px + py * py);
     double phi = atan2(py,px);
-    double rho_d = (fabs(rho) > 0.001) ? (px * v * cos(psi) + py * v * sin(psi)) / rho : 0.001; 
+    double rho_d = (fabs(rho) > 0.001) ? (px * v * cos(psi) + py * v * sin(psi)) / rho : 0; 
 
     Zsig.col(i) << rho,
                    phi,
@@ -344,6 +344,11 @@ void UKF::UpdateState(VectorXd z, VectorXd z_pred, MatrixXd S, MatrixXd Zsig, Me
 
   MatrixXd K = Tc * S.inverse();
   VectorXd z_diff = z - z_pred;
+  if (mtype == MeasurementPackage::RADAR) {
+    while (z_diff(1) > M_PI) z_diff(1) -= 2. * M_PI;
+    while (z_diff(1) < -M_PI) z_diff(1) += 2. * M_PI;
+  }
+
   x_ = x_ + K * z_diff;
   P_ = P_ - K * S * K.transpose();
 }
